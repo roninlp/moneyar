@@ -14,6 +14,8 @@ export const user = sqliteTable("user", {
   updatedAt: integer({ mode: "timestamp" })
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
+  username: text().unique(),
+  displayUsername: text(),
 });
 
 export const session = sqliteTable("session", {
