@@ -2,7 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod/mini";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,7 @@ const signupSchema = z.object({
 type SignUpFormType = z.infer<typeof signupSchema>;
 
 export function SignUp() {
+  const router = useRouter();
   const form = useForm<SignUpFormType>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -44,7 +47,15 @@ export function SignUp() {
         password: values.password,
         name: `${values.firstName} ${values.lastName}`,
       });
-    } catch (err) {}
+      if (res.error) {
+        toast.error(res.error.message);
+      } else {
+        toast.success(`لطفا ایمیل خود را برای فعالسازی اکانت چک کنید`);
+        router.push("/");
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   return (
