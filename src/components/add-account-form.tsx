@@ -1,17 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Form,
   FormControl,
@@ -20,18 +14,31 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { createAccount, type CreateAccountInput } from "@/lib/actions/accounts";
-import { z } from "zod";
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { createAccount } from "@/lib/actions/accounts";
 
-const addAccountSchema = z.object({
+const addAccountFormSchema = z.object({
   name: z.string().min(1, "Account name is required"),
-  type: z.enum(["checking", "savings", "credit", "investment", "cash", "other"]),
-  balance: z.number().min(0, "Balance must be 0 or greater").default(0),
+  type: z.enum([
+    "checking",
+    "savings",
+    "credit",
+    "investment",
+    "cash",
+    "other",
+  ]),
+  balance: z.string(),
   bank: z.string().optional(),
 });
 
-type AddAccountFormType = z.infer<typeof addAccountSchema>;
+type AddAccountFormType = z.infer<typeof addAccountFormSchema>;
 
 const accountTypes = [
   { value: "checking", label: "Checking" },
@@ -46,11 +53,11 @@ export function AddAccountForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<AddAccountFormType>({
-    resolver: zodResolver(addAccountSchema),
+    resolver: zodResolver(addAccountFormSchema),
     defaultValues: {
       name: "",
       type: "checking",
-      balance: 0,
+      balance: "0",
       bank: "",
     },
   });
@@ -58,12 +65,15 @@ export function AddAccountForm() {
   async function onSubmit(values: AddAccountFormType) {
     try {
       setIsSubmitting(true);
-      const result = await createAccount(values);
-      
+      const balance = parseFloat(values.balance) || 0;
+      const result = await createAccount({
+        ...values,
+        balance,
+      });
+
       if (result.success) {
         toast.success("Account created successfully!");
         form.reset();
-        // Close dialog by dispatching a custom event
         window.dispatchEvent(new CustomEvent("close-dialog"));
       } else {
         toast.error(result.error || "Failed to create account");
@@ -86,10 +96,7 @@ export function AddAccountForm() {
             <FormItem>
               <FormLabel>Account Name</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="e.g., Main Checking"
-                  {...field} 
-                />
+                <Input placeholder="e.g., Main Checking" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -133,7 +140,6 @@ export function AddAccountForm() {
                   step="0.01"
                   placeholder="0.00"
                   {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                 />
               </FormControl>
               <FormMessage />
@@ -148,10 +154,7 @@ export function AddAccountForm() {
             <FormItem>
               <FormLabel>Bank (Optional)</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="e.g., Chase, Wells Fargo"
-                  {...field} 
-                />
+                <Input placeholder="e.g., Chase, Wells Fargo" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -162,7 +165,9 @@ export function AddAccountForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => window.dispatchEvent(new CustomEvent("close-dialog"))}
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("close-dialog"))
+            }
             disabled={isSubmitting}
           >
             Cancel
