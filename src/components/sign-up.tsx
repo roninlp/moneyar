@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod/mini";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BRANDING_NAME_FA } from "@/const/branding";
 import { authClient } from "@/lib/auth-client";
+import { type SignUpFormType, signupSchema } from "@/lib/types/auth.types";
 import {
   Form,
   FormControl,
@@ -18,15 +18,6 @@ import {
   FormLabel,
   FormMessage,
 } from "./ui/form";
-
-const signupSchema = z.object({
-  firstName: z.string().check(z.minLength(3), z.maxLength(255)),
-  lastName: z.string().check(z.minLength(3), z.maxLength(255)),
-  email: z.email(),
-  password: z.string().check(z.minLength(6), z.maxLength(255), z.trim()),
-});
-
-type SignUpFormType = z.infer<typeof signupSchema>;
 
 export function SignUp() {
   const router = useRouter();
