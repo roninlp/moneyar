@@ -11,6 +11,7 @@ export const env = createEnv({
     DATABASE_AUTH_TOKEN: z.string(),
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_URL: z.url(),
+    RESEND_API_KEY: z.string(),
   },
   /*
    * Environment variables available on the client (and server).
@@ -29,5 +30,6 @@ export const env = createEnv({
     DATABASE_AUTH_TOKEN: process.env.DATABASE_AUTH_TOKEN,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
   },
 });

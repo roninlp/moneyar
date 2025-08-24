@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import localFont from "next/font/local";
+import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/layout";
+
+const vazirFont = localFont({
+  src: "../assets/fonts/Vazirmatn[wght].ttf",
+  variable: "--font-vazir",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -13,9 +21,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html
+      lang="fa"
+      dir="rtl"
+      className={vazirFont.variable}
+      suppressHydrationWarning
+    >
+      <body className="font-sans antialiased">
         <Providers>{children}</Providers>
+        <Toaster />
       </body>
     </html>
   );
