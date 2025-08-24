@@ -2,14 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BRANDING_NAME } from "@/const/branding";
 import { authClient } from "@/lib/auth-client";
-import { type SignInFormType, signInSchema } from "@/lib/types/auth.types";
+import { type ForgotPasswordFormType, forgotPasswordSchema } from "@/lib/types/auth.types";
 import {
   Form,
   FormControl,
@@ -19,26 +17,24 @@ import {
   FormMessage,
 } from "./ui/form";
 
-export function SignIn() {
-  const router = useRouter();
-  const form = useForm<SignInFormType>({
-    resolver: zodResolver(signInSchema),
+export function ForgotPassword() {
+  const form = useForm<ForgotPasswordFormType>({
+    resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
-  async function onSubmit(values: SignInFormType) {
-    const data = await authClient.signIn.email({
+  async function onSubmit(values: ForgotPasswordFormType) {
+    const data = await authClient.requestPasswordReset({
       email: values.email,
-      password: values.password,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
+    
     if (data.error) {
       toast.error(data.error.message);
     } else {
-      toast.success("با موفقیت وارد شدید");
-      router.push("/");
+      toast.success("ایمیل بازنشانی رمز عبور ارسال شد. ایمیل خود را بررسی کنید.");
     }
   }
 
@@ -55,9 +51,9 @@ export function SignIn() {
                 #home
               </Link>
               <h1 className="mt-4 mb-1 font-semibold text-xl">
-                Sign In to {BRANDING_NAME}
+                Forgot Password
               </h1>
-              <p className="text-sm">Welcome back! Sign in to continue</p>
+              <p className="text-sm">رمز عبور خود را فراموش کرده‌اید؟ نگران نباشید</p>
             </div>
 
             <div className="space-y-6">
@@ -75,46 +71,21 @@ export function SignIn() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>رمز عبور</FormLabel>
-                      <Button asChild variant="link" className="h-auto px-0 font-normal">
-                        <Link href="/forgot-password" className="text-sm">
-                          فراموشی رمز عبور؟
-                        </Link>
-                      </Button>
-                    </div>
-                    <FormControl>
-                      <Input
-                        placeholder="********"
-                        type="password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <Button
                 type="submit"
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "در حال ثبت نام" : "ثبت نام"}
+                {form.formState.isSubmitting ? "در حال ارسال..." : "ارسال ایمیل بازنشانی"}
               </Button>
             </div>
           </div>
 
           <div className="rounded-(--radius) border bg-muted p-3">
             <p className="text-center text-accent-foreground text-sm">
-              Don't have an account ?
+              Remember your password?
               <Button asChild variant="link" className="px-2">
-                <Link href="#">Create account</Link>
+                <Link href="/signin">Sign In</Link>
               </Button>
             </p>
           </div>
