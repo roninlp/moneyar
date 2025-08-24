@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
-import { type ForgotPasswordFormType, forgotPasswordSchema } from "@/lib/types/auth.types";
+import {
+  type ForgotPasswordFormType,
+  forgotPasswordSchema,
+} from "@/lib/types/auth.types";
 import {
   Form,
   FormControl,
@@ -30,11 +33,13 @@ export function ForgotPassword() {
       email: values.email,
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    
+
     if (data.error) {
       toast.error(data.error.message);
     } else {
-      toast.success("ایمیل بازنشانی رمز عبور ارسال شد. ایمیل خود را بررسی کنید.");
+      toast.success(
+        "ایمیل بازنشانی رمز عبور ارسال شد. ایمیل خود را بررسی کنید.",
+      );
     }
   }
 
@@ -53,7 +58,9 @@ export function ForgotPassword() {
               <h1 className="mt-4 mb-1 font-semibold text-xl">
                 Forgot Password
               </h1>
-              <p className="text-sm">رمز عبور خود را فراموش کرده‌اید؟ نگران نباشید</p>
+              <p className="text-sm">
+                رمز عبور خود را فراموش کرده‌اید؟ نگران نباشید
+              </p>
             </div>
 
             <div className="space-y-6">
@@ -76,7 +83,9 @@ export function ForgotPassword() {
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "در حال ارسال..." : "ارسال ایمیل بازنشانی"}
+                {form.formState.isSubmitting
+                  ? "در حال ارسال..."
+                  : "ارسال ایمیل بازنشانی"}
               </Button>
             </div>
           </div>

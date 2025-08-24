@@ -82,7 +82,11 @@ export function SignIn() {
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <FormLabel>رمز عبور</FormLabel>
-                      <Button asChild variant="link" className="h-auto px-0 font-normal">
+                      <Button
+                        asChild
+                        variant="link"
+                        className="h-auto px-0 font-normal"
+                      >
                         <Link href="/forgot-password" className="text-sm">
                           فراموشی رمز عبور؟
                         </Link>

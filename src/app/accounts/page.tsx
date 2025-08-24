@@ -1,6 +1,9 @@
-import { Plus } from "lucide-react";
-import { redirect } from "next/navigation";
-import { AddAccountForm } from "@/components/add-account-form";
+"use client";
+
+import { Edit, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { AccountForm } from "@/components/account-form";
+import { DeleteAccountDialog } from "@/components/delete-account-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,18 +14,37 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { getAccounts } from "@/lib/actions/accounts";
+import type { Account } from "@/lib/types/accounts";
 
-export default async function AccountsPage() {
-  const result = await getAccounts();
+export default function AccountsPage() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editAccount, setEditAccount] = useState<Account | null>(null);
+  const [deleteAccount, setDeleteAccount] = useState<Account | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
-  if (!result.success) {
-    if (result.error === "Unauthorized") {
-      redirect("/sign-in");
+  const fetchAccounts = useCallback(async () => {
+    try {
+      const result = await getAccounts();
+      if (result.success) {
+        setAccounts(result.data || []);
+      } else {
+        setError(result.error || "Failed to fetch accounts");
+      }
+    } catch {
+      setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
     }
-    return <div>Error: {result.error}</div>;
-  }
+  }, []);
 
-  const accounts = result.data || [];
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="container mx-auto py-8">
@@ -33,7 +55,7 @@ export default async function AccountsPage() {
             Manage your financial accounts
           </p>
         </div>
-        <Dialog>
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -44,7 +66,13 @@ export default async function AccountsPage() {
             <DialogHeader>
               <DialogTitle>Add New Account</DialogTitle>
             </DialogHeader>
-            <AddAccountForm />
+            <AccountForm
+              mode="create"
+              onClose={() => {
+                setShowAddDialog(false);
+                fetchAccounts();
+              }}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -102,11 +130,60 @@ export default async function AccountsPage() {
                       {new Date(account.createdAt).toLocaleDateString()}
                     </span>
                   </div>
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditAccount(account)}
+                      className="flex-1"
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDeleteAccount(account)}
+                      className="flex-1 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Edit Account Dialog */}
+      <Dialog open={!!editAccount} onOpenChange={() => setEditAccount(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Account</DialogTitle>
+          </DialogHeader>
+          {editAccount && (
+            <AccountForm
+              mode="edit"
+              initialData={editAccount}
+              onClose={() => {
+                setEditAccount(null);
+                fetchAccounts();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      {deleteAccount && (
+        <DeleteAccountDialog
+          isOpen={!!deleteAccount}
+          onClose={() => setDeleteAccount(null)}
+          onSuccess={fetchAccounts}
+          account={deleteAccount}
+        />
       )}
     </div>
   );

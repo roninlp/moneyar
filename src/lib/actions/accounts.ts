@@ -7,23 +7,13 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { accounts } from "@/lib/db/schema/accounts";
+import {
+  type CreateAccountInput,
+  createAccountSchema,
+  type UpdateAccountInput,
+  updateAccountSchema,
+} from "@/lib/types/accounts";
 import { generateId } from "../utils";
-
-const createAccountSchema = z.object({
-  name: z.string().min(1, "Account name is required"),
-  type: z.enum([
-    "checking",
-    "savings",
-    "credit",
-    "investment",
-    "cash",
-    "other",
-  ]),
-  balance: z.number().default(0),
-  bank: z.string().optional(),
-});
-
-export type CreateAccountInput = z.infer<typeof createAccountSchema>;
 
 export async function createAccount(data: CreateAccountInput) {
   try {
@@ -86,5 +76,74 @@ export async function getAccounts() {
   } catch (error) {
     console.error("Error fetching accounts:", error);
     return { success: false, error: "Failed to fetch accounts" };
+  }
+}
+
+export async function updateAccount(data: UpdateAccountInput) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const validatedData = updateAccountSchema.parse(data);
+
+    const [updatedAccount] = await db
+      .update(accounts)
+      .set({
+        name: validatedData.name,
+        type: validatedData.type,
+        balance: validatedData.balance,
+        bank: validatedData.bank,
+      })
+      .where(eq(accounts.id, validatedData.id))
+      .returning();
+
+    if (!updatedAccount) {
+      return { success: false, error: "Account not found" };
+    }
+
+    revalidatePath("/accounts");
+    return { success: true, data: updatedAccount };
+  } catch (error) {
+    console.error("Error updating account:", error);
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: "Invalid form data",
+        details: error.message,
+      };
+    }
+    return { success: false, error: "Failed to update account" };
+  }
+}
+
+export async function deleteAccount(accountId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const [deletedAccount] = await db
+      .delete(accounts)
+      .where(eq(accounts.id, accountId))
+      .returning();
+
+    if (!deletedAccount) {
+      return { success: false, error: "Account not found" };
+    }
+
+    revalidatePath("/accounts");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    return { success: false, error: "Failed to delete account" };
   }
 }
