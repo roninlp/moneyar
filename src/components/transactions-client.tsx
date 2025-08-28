@@ -1,8 +1,7 @@
 "use client";
 
 import { Edit, Plus, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { use, useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { TransactionForm } from "@/components/transaction-form";
 import { Button } from "@/components/ui/button";
@@ -19,20 +18,89 @@ import type { Account } from "@/lib/types/accounts";
 import type { Transaction } from "@/lib/types/transactions";
 
 interface TransactionsClientProps {
-  initialTransactions: Transaction[];
-  accounts: Account[];
+  transactionsPromise: Promise<{
+    success: boolean;
+    error?: string;
+    data?: Transaction[];
+  }>;
+  accountsPromise: Promise<{
+    success: boolean;
+    error?: string;
+    data?: Account[];
+  }>;
 }
 
 export function TransactionsClient({
-  initialTransactions,
-  accounts,
+  transactionsPromise,
+  accountsPromise,
 }: TransactionsClientProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const transactionsResult = use(transactionsPromise);
+  const accountsResult = use(accountsPromise);
+
+  const [optimisticTransactions, _addOptimisticTransaction] = useOptimistic(
+    transactionsResult.success ? transactionsResult.data || [] : [],
+    (
+      state,
+      action: { type: "add" | "update" | "delete"; transaction: Transaction },
+    ) => {
+      switch (action.type) {
+        case "add":
+          return [...state, action.transaction];
+        case "update":
+          return state.map((transaction) =>
+            transaction.id === action.transaction.id
+              ? action.transaction
+              : transaction,
+          );
+        case "delete":
+          return state.filter(
+            (transaction) => transaction.id !== action.transaction.id,
+          );
+        default:
+          return state;
+      }
+    },
+  );
+
+  const accounts = accountsResult.success ? accountsResult.data || [] : [];
+
   const [editTransaction, setEditTransaction] = useState<Transaction | null>(
     null,
   );
   const [showAddDialog, setShowAddDialog] = useState(false);
+
+  if (!transactionsResult.success) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 via-pink-50 to-rose-50 dark:from-red-950 dark:via-pink-950 dark:to-rose-950">
+        <div className="text-center">
+          <div className="mb-4 text-6xl text-red-500">⚠️</div>
+          <h1 className="mb-4 font-bold text-3xl text-gray-900 dark:text-gray-100">
+            خطا
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            {transactionsResult.error || "بارگذاری تراکنش‌ها ناموفق بود"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!accountsResult.success) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 via-pink-50 to-rose-50 dark:from-red-950 dark:via-pink-950 dark:to-rose-950">
+        <div className="text-center">
+          <div className="mb-4 text-6xl text-red-500">⚠️</div>
+          <h1 className="mb-4 font-bold text-3xl text-gray-900 dark:text-gray-100">
+            خطا
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            {accountsResult.error || "بارگذاری حساب‌ها ناموفق بود"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const handleDeleteTransaction = async (transactionId: string) => {
     startTransition(async () => {
@@ -40,7 +108,6 @@ export function TransactionsClient({
         const result = await deleteTransaction(transactionId);
         if (result.success) {
           toast.success("تراکنش با موفقیت حذف شد!");
-          router.refresh();
         } else {
           toast.error(result.error || "حذف تراکنش ناموفق بود");
         }
@@ -55,7 +122,7 @@ export function TransactionsClient({
     return account ? account.name : "Unknown Account";
   };
 
-  const sortedTransactions = initialTransactions.sort(
+  const sortedTransactions = optimisticTransactions.sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
@@ -79,7 +146,6 @@ export function TransactionsClient({
               mode="create"
               onClose={() => {
                 setShowAddDialog(false);
-                router.refresh();
               }}
             />
           </DialogContent>
@@ -266,7 +332,6 @@ export function TransactionsClient({
               initialData={editTransaction}
               onClose={() => {
                 setEditTransaction(null);
-                router.refresh();
               }}
             />
           )}
