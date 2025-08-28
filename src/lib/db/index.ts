@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/libsql";
 import { env } from "@/env";
 import * as accountsSchema from "./schema/accounts";
 import * as authSchema from "./schema/auth";
+import * as transactionsSchema from "./schema/transactions";
 
 const client = createClient({
   url: env.DATABASE_URL,
@@ -15,5 +16,6 @@ export const db = drizzle({
   schema: {
     ...authSchema,
     ...accountsSchema,
+    ...transactionsSchema,
   },
 });
