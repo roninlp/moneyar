@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { UserPlus2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -50,30 +51,41 @@ export function SignUp() {
   }
 
   return (
-    <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
+    <section className="flex min-h-screen bg-gradient-primary px-4 py-16 md:py-32">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="m-auto h-fit w-full max-w-sm rounded-[calc(var(--radius)+.125rem)] border bg-card p-0.5 shadow-md dark:[--color-muted:var(--color-zinc-900)]"
+          className="m-auto h-fit w-full max-w-md rounded-2xl border border-white/20 bg-white/80 p-0.5 shadow-2xl backdrop-blur-sm dark:border-white/10 dark:bg-gray-900/80"
         >
           <div className="p-8 pb-6">
-            <h1 className="mb-1 font-semibold text-xl">
-              ساخت اکانت {BRANDING_NAME_FA}
-            </h1>
-            <p className="text-sm">
-              خوش آمدید! اکانت خودتون رو بسازید و وارد شوید
-            </p>
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-primary-button">
+                <UserPlus2 />
+              </div>
+              <h1 className="mb-2 bg-clip-text font-bold text-2xl">
+                ساخت اکانت {BRANDING_NAME_FA}
+              </h1>
+              <p className="text-gray-600 text-sm dark:text-gray-400">
+                خوش آمدید! اکانت خودتون رو بسازید و وارد شوید
+              </p>
+            </div>
 
-            <div className="mt-4 space-y-5">
+            <div className="mt-8 space-y-5">
               <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>نام</FormLabel>
+                      <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                        نام
+                      </FormLabel>
                       <FormControl>
-                        <Input placeholder="علی" {...field} />
+                        <Input
+                          placeholder="علی"
+                          className="rounded-xl border-gray-200 focus:border-primary-focus focus:ring-primary-focus"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -84,9 +96,15 @@ export function SignUp() {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>نام خانوادگی</FormLabel>
+                      <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                        نام خانوادگی
+                      </FormLabel>
                       <FormControl>
-                        <Input placeholder="فهیم" {...field} />
+                        <Input
+                          placeholder="فهیم"
+                          className="rounded-xl border-gray-200 focus:border-primary-focus focus:ring-primary-focus"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -99,9 +117,15 @@ export function SignUp() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>ایمیل</FormLabel>
+                    <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                      ایمیل
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="alifahim@gmail.com" {...field} />
+                      <Input
+                        placeholder="example@email.com"
+                        className="rounded-xl border-gray-200 focus:border-primary-focus focus:ring-primary-focus"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -113,11 +137,14 @@ export function SignUp() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>رمز عبور</FormLabel>
+                    <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                      رمز عبور
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="********"
                         type="password"
+                        className="rounded-xl border-gray-200 focus:border-primary-focus focus:ring-primary-focus"
                         {...field}
                       />
                     </FormControl>
@@ -128,19 +155,25 @@ export function SignUp() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full rounded-xl bg-gradient-primary-button py-3 font-medium text-white shadow-lg transition-all duration-200 hover:shadow-xl"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "در حال ثبت نام" : "ثبت نام"}
+                {form.formState.isSubmitting
+                  ? "در حال ثبت نام..."
+                  : "ایجاد حساب"}
               </Button>
             </div>
           </div>
 
-          <div className="rounded-(--radius) border bg-muted p-3">
-            <p className="text-center text-accent-foreground text-sm">
+          <div className="rounded-b-2xl border-gray-100 border-t bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-800/80">
+            <p className="text-center text-gray-600 text-sm dark:text-gray-400">
               اکانت دارید؟
-              <Button asChild variant="link" className="px-2">
-                <Link href="/signin">ورود</Link>
+              <Button
+                asChild
+                variant="link"
+                className="px-2 font-medium text-primary-focus hover:text-primary-focus/80"
+              >
+                <Link href="/signin">ورود به حساب</Link>
               </Button>
             </p>
           </div>

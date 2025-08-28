@@ -21,19 +21,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getAccounts } from "@/lib/actions/accounts";
 import {
   createTransaction,
   updateTransaction,
 } from "@/lib/actions/transactions";
-import { getAccounts } from "@/lib/actions/accounts";
+import type { Account } from "@/lib/types/accounts";
 import {
-  TRANSACTION_TYPE_LABELS,
   TRANSACTION_CATEGORY_LABELS,
+  TRANSACTION_TYPE_LABELS,
   type Transaction,
   type TransactionFormData,
   transactionFormSchema,
 } from "@/lib/types/transactions";
-import type { Account } from "@/lib/types/accounts";
 
 interface TransactionFormProps {
   mode?: "create" | "edit";
@@ -99,10 +99,10 @@ export function TransactionForm({
         });
 
         if (result.success) {
-          toast.success("Transaction updated successfully!");
+          toast.success("تراکنش با موفقیت بروزرسانی شد!");
           onClose?.();
         } else {
-          toast.error(result.error || "Failed to update transaction");
+          toast.error(result.error || "بروزرسانی تراکنش ناموفق بود");
         }
       } else {
         const result = await createTransaction({
@@ -112,16 +112,16 @@ export function TransactionForm({
         });
 
         if (result.success) {
-          toast.success("Transaction created successfully!");
+          toast.success("تراکنش با موفقیت ایجاد شد!");
           form.reset();
           onClose?.();
         } else {
-          toast.error(result.error || "Failed to create transaction");
+          toast.error(result.error || "ایجاد تراکنش ناموفق بود");
         }
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("خطای غیرمنتظره رخ داد");
     } finally {
       setIsSubmitting(false);
     }
@@ -129,17 +129,19 @@ export function TransactionForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Transaction Type</FormLabel>
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                نوع تراکنش
+              </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select transaction type" />
+                  <SelectTrigger className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20">
+                    <SelectValue placeholder="نوع تراکنش را انتخاب کنید" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -160,12 +162,15 @@ export function TransactionForm({
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount</FormLabel>
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                مبلغ
+              </FormLabel>
               <FormControl>
                 <Input
                   type="number"
                   step="0.01"
                   placeholder="0.00"
+                  className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
                   {...field}
                 />
               </FormControl>
@@ -179,9 +184,15 @@ export function TransactionForm({
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                توضیحات
+              </FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Grocery shopping" {...field} />
+                <Input
+                  placeholder="مثال: خرید مواد غذایی"
+                  className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -193,11 +204,13 @@ export function TransactionForm({
           name="category"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Category</FormLabel>
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                دسته‌بندی
+              </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                  <SelectTrigger className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20">
+                    <SelectValue placeholder="دسته‌بندی را انتخاب کنید" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -218,11 +231,13 @@ export function TransactionForm({
           name="accountId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Account</FormLabel>
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                حساب
+              </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select account" />
+                  <SelectTrigger className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20">
+                    <SelectValue placeholder="حساب را انتخاب کنید" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -243,32 +258,43 @@ export function TransactionForm({
           name="date"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Date</FormLabel>
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                تاریخ
+              </FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input
+                  type="date"
+                  className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-3 space-x-reverse">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
+            className="rounded-xl border-gray-200 hover:bg-gray-50"
           >
-            Cancel
+            لغو
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="rounded-xl bg-gradient-primary-button px-6 py-2 font-medium text-white shadow-lg transition-all duration-200 hover:shadow-xl"
+          >
             {isSubmitting
               ? mode === "edit"
-                ? "Updating..."
-                : "Creating..."
+                ? "در حال بروزرسانی..."
+                : "در حال ایجاد..."
               : mode === "edit"
-                ? "Update Transaction"
-                : "Create Transaction"}
+                ? "بروزرسانی تراکنش"
+                : "ایجاد تراکنش"}
           </Button>
         </div>
       </form>

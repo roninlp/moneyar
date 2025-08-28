@@ -76,10 +76,10 @@ export function AccountForm({
         });
 
         if (result.success) {
-          toast.success("Account updated successfully!");
+          toast.success("حساب با موفقیت بروزرسانی شد!");
           onClose?.();
         } else {
-          toast.error(result.error || "Failed to update account");
+          toast.error(result.error || "بروزرسانی حساب ناموفق بود");
         }
       } else {
         const result = await createAccount({
@@ -88,16 +88,16 @@ export function AccountForm({
         });
 
         if (result.success) {
-          toast.success("Account created successfully!");
+          toast.success("حساب با موفقیت ایجاد شد!");
           form.reset();
           onClose?.();
         } else {
-          toast.error(result.error || "Failed to create account");
+          toast.error(result.error || "ایجاد حساب ناموفق بود");
         }
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("خطای غیرمنتظره رخ داد");
     } finally {
       setIsSubmitting(false);
     }
@@ -105,15 +105,21 @@ export function AccountForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Account Name</FormLabel>
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                نام حساب
+              </FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Main Checking" {...field} />
+                <Input
+                  placeholder="مثال: حساب چک اصلی"
+                  className="rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500/20"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -125,11 +131,13 @@ export function AccountForm({
           name="type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Account Type</FormLabel>
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                نوع حساب
+              </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select account type" />
+                  <SelectTrigger className="rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500/20">
+                    <SelectValue placeholder="نوع حساب را انتخاب کنید" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -150,14 +158,15 @@ export function AccountForm({
           name="balance"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                {mode === "edit" ? "Current Balance" : "Initial Balance"}
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                {mode === "edit" ? "موجودی فعلی" : "موجودی اولیه"}
               </FormLabel>
               <FormControl>
                 <Input
                   type="number"
                   step="0.01"
                   placeholder="0.00"
+                  className="rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500/20"
                   {...field}
                 />
               </FormControl>
@@ -171,32 +180,43 @@ export function AccountForm({
           name="bank"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Bank (Optional)</FormLabel>
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300">
+                بانک (اختیاری)
+              </FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Chase, Wells Fargo" {...field} />
+                <Input
+                  placeholder="مثال: بانک ملی، بانک ملت"
+                  className="rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500/20"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-3 space-x-reverse">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
+            className="rounded-xl border-gray-200 hover:bg-gray-50"
           >
-            Cancel
+            لغو
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="rounded-xl bg-gradient-primary-button px-6 py-2 font-medium text-white shadow-lg transition-all duration-200 hover:shadow-xl"
+          >
             {isSubmitting
               ? mode === "edit"
-                ? "Updating..."
-                : "Creating..."
+                ? "در حال بروزرسانی..."
+                : "در حال ایجاد..."
               : mode === "edit"
-                ? "Update Account"
-                : "Create Account"}
+                ? "بروزرسانی حساب"
+                : "ایجاد حساب"}
           </Button>
         </div>
       </form>
