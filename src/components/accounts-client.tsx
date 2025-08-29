@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Account } from "@/lib/types/accounts";
+import { Badge } from "./ui/badge";
 
 interface AccountsClientProps {
   accountsPromise: Promise<{
@@ -99,7 +100,7 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
         </div>
 
         {optimisticAccounts.length === 0 ? (
-          <Card className="rounded-2xl border-0 bg-white/80 shadow-xl backdrop-blur-sm dark:bg-gray-800/80">
+          <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="text-center">
                 <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/20 dark:to-blue-900/20">
@@ -139,18 +140,13 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {optimisticAccounts.map((account) => (
-              <Card
-                key={account.id}
-                className="rounded-2xl border-0 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-xl dark:bg-gray-800/80"
-              >
-                <CardHeader className="pb-4">
+              <Card key={account.id}>
+                <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span className="font-bold text-gray-900 text-lg dark:text-gray-100">
-                      {account.name}
-                    </span>
-                    <span className="rounded-full bg-gradient-to-r from-purple-100 to-blue-100 px-3 py-1 font-medium text-purple-700 text-xs capitalize dark:from-purple-900/20 dark:to-blue-900/20 dark:text-purple-300">
+                    <span className="font-bold">{account.name}</span>
+                    <Badge variant="outline" className="py-1">
                       {account.type}
-                    </span>
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -159,7 +155,7 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
                       <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
                         موجودی
                       </span>
-                      <span className="font-bold text-green-600 text-xl">
+                      <span className="font-bold text-primary text-xl">
                         $
                         {account.balance.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
@@ -169,16 +165,16 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
                     </div>
                     {account.bank && (
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
+                        <span className="font-medium text-foreground/70 text-sm">
                           بانک
                         </span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                        <span className="font-medium text-gray-900">
                           {account.bank}
                         </span>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
+                      <span className="font-medium text-foreground/70 text-sm">
                         تاریخ ایجاد
                       </span>
                       <span className="text-gray-900 text-sm dark:text-gray-100">
@@ -187,24 +183,22 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
                         )}
                       </span>
                     </div>
-                    <div className="mt-6 flex gap-3">
+                    <div className="mt-6 flex justify-between gap-3">
                       <Button
-                        variant="outline"
-                        size="sm"
+                        variant="secondary"
                         onClick={() => setEditAccount(account)}
-                        className="flex-1 rounded-xl border-purple-200 text-purple-700 hover:border-purple-300 hover:bg-purple-50"
+                        className=""
                       >
-                        <Edit className="mr-2 h-4 w-4" />
+                        <Edit className="h-4 w-4" />
                         ویرایش
                       </Button>
                       <Button
-                        variant="outline"
-                        size="sm"
+                        variant="destructive"
+                        size="icon"
                         onClick={() => setDeleteAccount(account)}
-                        className="flex-1 rounded-xl border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
+                        className=""
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        حذف
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
