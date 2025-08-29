@@ -9,9 +9,7 @@ export default function Home() {
         <div className="mx-auto max-w-4xl">
           <h1 className="mb-6 font-bold text-4xl text-gray-900 sm:text-5xl lg:text-6xl dark:text-white">
             مدیریت هوشمند{" "}
-            <span className="text-blue-600 dark:text-blue-400">
-              {BRANDING_NAME_FA}
-            </span>
+            <span className="text-primary">{BRANDING_NAME_FA}</span>
           </h1>
 
           <p className="mb-8 text-gray-600 text-xl sm:text-2xl dark:text-gray-300">

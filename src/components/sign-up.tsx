@@ -12,6 +12,14 @@ import { BRANDING_NAME_FA } from "@/const/branding";
 import { authClient } from "@/lib/auth-client";
 import { type SignUpFormType, signupSchema } from "@/lib/types/auth.types";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import {
   Form,
   FormControl,
   FormField,
@@ -51,26 +59,26 @@ export function SignUp() {
   }
 
   return (
-    <section className="flex min-h-screen bg-gradient-primary px-4 py-16 md:py-32">
+    <section className="flex min-h-screen bg-background px-4 py-16 md:py-32">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="m-auto h-fit w-full max-w-md rounded-2xl border border-white/20 bg-white/80 p-0.5 shadow-2xl backdrop-blur-sm dark:border-white/10 dark:bg-gray-900/80"
+          className="m-auto"
+          // className="m-auto h-fit w-full max-w-md rounded-2xl border border-white/20 bg-white/80 p-0.5 shadow-2xl backdrop-blur-sm dark:border-white/10 dark:bg-gray-900/80"
         >
-          <div className="p-8 pb-6">
-            <div className="text-center">
+          <Card>
+            <CardHeader className="text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-primary-button">
                 <UserPlus2 />
               </div>
-              <h1 className="mb-2 bg-clip-text font-bold text-2xl">
+              <CardTitle className="mb-2 bg-clip-text font-bold text-2xl">
                 ساخت اکانت {BRANDING_NAME_FA}
-              </h1>
-              <p className="text-gray-600 text-sm dark:text-gray-400">
+              </CardTitle>
+              <CardDescription className="text-gray-600 text-sm dark:text-gray-400">
                 خوش آمدید! اکانت خودتون رو بسازید و وارد شوید
-              </p>
-            </div>
-
-            <div className="mt-8 space-y-5">
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
@@ -152,31 +160,30 @@ export function SignUp() {
                   </FormItem>
                 )}
               />
+            </CardContent>
 
+            <CardFooter className="flex w-full flex-col gap-4">
               <Button
                 type="submit"
-                className="w-full rounded-xl bg-gradient-primary-button py-3 font-medium text-white shadow-lg transition-all duration-200 hover:shadow-xl"
+                className="w-full py-3 font-medium"
                 disabled={form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting
                   ? "در حال ثبت نام..."
                   : "ایجاد حساب"}
               </Button>
-            </div>
-          </div>
-
-          <div className="rounded-b-2xl border-gray-100 border-t bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-800/80">
-            <p className="text-center text-gray-600 text-sm dark:text-gray-400">
-              اکانت دارید؟
-              <Button
-                asChild
-                variant="link"
-                className="px-2 font-medium text-primary-focus hover:text-primary-focus/80"
-              >
-                <Link href="/signin">ورود به حساب</Link>
-              </Button>
-            </p>
-          </div>
+              <p className="text-center text-gray-600 text-sm dark:text-gray-400">
+                اکانت دارید؟
+                <Button
+                  asChild
+                  variant="link"
+                  className="px-2 font-medium text-primary hover:text-primary/80"
+                >
+                  <Link href="/signin">ورود به حساب</Link>
+                </Button>
+              </p>
+            </CardFooter>
+          </Card>
         </form>
       </Form>
     </section>

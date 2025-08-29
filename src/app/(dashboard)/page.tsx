@@ -1,3 +1,4 @@
+import { Banknote, CreditCard, TrendingUp, Wallet } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -5,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Banknote, CreditCard, TrendingUp, Wallet } from "lucide-react";
 
 export default function DashboardPage() {
   return (
@@ -20,45 +20,45 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
+            <CardTitle className="font-medium text-sm">Total Balance</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0.00</div>
-            <p className="text-xs text-muted-foreground">+0% from last month</p>
+            <div className="font-bold text-2xl">$0.00</div>
+            <p className="text-muted-foreground text-xs">+0% from last month</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Transactions</CardTitle>
+            <CardTitle className="font-medium text-sm">Transactions</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="font-bold text-2xl">0</div>
+            <p className="text-muted-foreground text-xs">This month</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Income</CardTitle>
+            <CardTitle className="font-medium text-sm">Income</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0.00</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="font-bold text-2xl">$0.00</div>
+            <p className="text-muted-foreground text-xs">This month</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expenses</CardTitle>
+            <CardTitle className="font-medium text-sm">Expenses</CardTitle>
             <Banknote className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0.00</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="font-bold text-2xl">$0.00</div>
+            <p className="text-muted-foreground text-xs">This month</p>
           </CardContent>
         </Card>
       </div>
@@ -70,7 +70,7 @@ export default function DashboardPage() {
             <CardDescription>Your latest financial activity</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               No transactions yet. Start by adding your first account and
               transaction.
             </p>
@@ -83,7 +83,7 @@ export default function DashboardPage() {
             <CardDescription>Common tasks to get you started</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Add your first account to start tracking your finances.
             </p>
           </CardContent>
