@@ -1,7 +1,14 @@
 "use client";
 
 import { Edit, Plus, Trash2 } from "lucide-react";
-import { use, useOptimistic, useState, useTransition } from "react";
+import {
+  use,
+  useCallback,
+  useMemo,
+  useOptimistic,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import { TransactionForm } from "@/components/transaction-form";
 import { Button } from "@/components/ui/button";
@@ -38,7 +45,7 @@ export function TransactionsClient({
   const transactionsResult = use(transactionsPromise);
   const accountsResult = use(accountsPromise);
 
-  const [optimisticTransactions, _addOptimisticTransaction] = useOptimistic(
+  const [optimisticTransactions, addOptimisticTransaction] = useOptimistic(
     transactionsResult.success ? transactionsResult.data || [] : [],
     (
       state,
@@ -65,10 +72,54 @@ export function TransactionsClient({
 
   const accounts = accountsResult.success ? accountsResult.data || [] : [];
 
+  // State for dialogs
   const [editTransaction, setEditTransaction] = useState<Transaction | null>(
     null,
   );
   const [showAddDialog, setShowAddDialog] = useState(false);
+
+  // Create memoized account lookup map for better performance
+  const accountMap = useMemo(() => {
+    return new Map(accounts.map((account: Account) => [account.id, account]));
+  }, [accounts]);
+
+  // Memoized sorted transactions
+  const sortedTransactions = useMemo(() => {
+    return [...optimisticTransactions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+  }, [optimisticTransactions]);
+
+  // Memoized account name getter
+  const getAccountName = useCallback(
+    (accountId: string) => {
+      const account = accountMap.get(accountId);
+      return account ? account.name : "Unknown Account";
+    },
+    [accountMap],
+  );
+
+  // Optimistic delete handler
+  const handleDeleteTransaction = useCallback(
+    async (transaction: Transaction) => {
+      // Add optimistic update
+      addOptimisticTransaction({ type: "delete", transaction });
+
+      startTransition(async () => {
+        try {
+          const result = await deleteTransaction(transaction.id);
+          if (!result.success) {
+            toast.error(result.error || "حذف تراکنش ناموفق بود");
+          } else {
+            toast.success("تراکنش با موفقیت حذف شد!");
+          }
+        } catch {
+          toast.error("خطای غیرمنتظره رخ داد");
+        }
+      });
+    },
+    [addOptimisticTransaction],
+  );
 
   if (!transactionsResult.success) {
     return (
@@ -102,30 +153,6 @@ export function TransactionsClient({
     );
   }
 
-  const handleDeleteTransaction = async (transactionId: string) => {
-    startTransition(async () => {
-      try {
-        const result = await deleteTransaction(transactionId);
-        if (result.success) {
-          toast.success("تراکنش با موفقیت حذف شد!");
-        } else {
-          toast.error(result.error || "حذف تراکنش ناموفق بود");
-        }
-      } catch {
-        toast.error("خطای غیرمنتظره رخ داد");
-      }
-    });
-  };
-
-  const getAccountName = (accountId: string) => {
-    const account = accounts.find((acc) => acc.id === accountId);
-    return account ? account.name : "Unknown Account";
-  };
-
-  const sortedTransactions = optimisticTransactions.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
-
   return (
     <>
       <div className="mb-8 flex justify-end">
@@ -144,9 +171,9 @@ export function TransactionsClient({
             </DialogHeader>
             <TransactionForm
               mode="create"
-              onClose={() => {
-                setShowAddDialog(false);
-              }}
+              accounts={accounts}
+              onSuccess={() => setShowAddDialog(false)}
+              onOptimisticAdd={addOptimisticTransaction}
             />
           </DialogContent>
         </Dialog>
@@ -300,7 +327,7 @@ export function TransactionsClient({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteTransaction(transaction.id)}
+                        onClick={() => handleDeleteTransaction(transaction)}
                         disabled={isPending}
                         className="rounded-xl border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
                       >
@@ -330,9 +357,9 @@ export function TransactionsClient({
             <TransactionForm
               mode="edit"
               initialData={editTransaction}
-              onClose={() => {
-                setEditTransaction(null);
-              }}
+              accounts={accounts}
+              onSuccess={() => setEditTransaction(null)}
+              onOptimisticUpdate={addOptimisticTransaction}
             />
           )}
         </DialogContent>

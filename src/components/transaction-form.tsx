@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getAccounts } from "@/lib/actions/accounts";
 import {
   createTransaction,
   updateTransaction,
@@ -38,16 +37,27 @@ import {
 interface TransactionFormProps {
   mode?: "create" | "edit";
   initialData?: Transaction;
+  accounts: Account[];
   onClose?: () => void;
+  onSuccess?: () => void;
+  onOptimisticAdd?: (action: { type: "add"; transaction: Transaction }) => void;
+  onOptimisticUpdate?: (action: {
+    type: "update";
+    transaction: Transaction;
+  }) => void;
 }
 
 export function TransactionForm({
   mode = "create",
   initialData,
+  accounts,
   onClose,
+  onSuccess,
+  onOptimisticAdd,
+  onOptimisticUpdate,
 }: TransactionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionFormSchema),
@@ -61,16 +71,7 @@ export function TransactionForm({
     },
   });
 
-  useEffect(() => {
-    async function loadAccounts() {
-      const result = await getAccounts();
-      if (result.success) {
-        setAccounts(result.data || []);
-      }
-    }
-    loadAccounts();
-  }, []);
-
+  // Reset form when mode or initialData changes
   useEffect(() => {
     if (mode === "edit" && initialData) {
       form.reset({
@@ -80,6 +81,15 @@ export function TransactionForm({
         type: initialData.type,
         date: new Date(initialData.date).toISOString().split("T")[0],
         accountId: initialData.accountId,
+      });
+    } else if (mode === "create") {
+      form.reset({
+        amount: "",
+        description: "",
+        category: "other",
+        type: "expense",
+        date: new Date().toISOString().split("T")[0],
+        accountId: "",
       });
     }
   }, [mode, initialData, form]);
@@ -91,6 +101,24 @@ export function TransactionForm({
       const date = new Date(values.date);
 
       if (mode === "edit" && initialData) {
+        // Create optimistic transaction for update
+        const optimisticTransaction: Transaction = {
+          ...initialData,
+          amount,
+          description: values.description,
+          category: values.category,
+          type: values.type,
+          date,
+          accountId: values.accountId,
+          updatedAt: new Date(),
+        };
+
+        // Add optimistic update
+        onOptimisticUpdate?.({
+          type: "update",
+          transaction: optimisticTransaction,
+        });
+
         const result = await updateTransaction({
           id: initialData.id,
           ...values,
@@ -100,11 +128,14 @@ export function TransactionForm({
 
         if (result.success) {
           toast.success("تراکنش با موفقیت بروزرسانی شد!");
+          onSuccess?.();
           onClose?.();
         } else {
           toast.error(result.error || "بروزرسانی تراکنش ناموفق بود");
+          // The optimistic update will be reverted automatically
         }
       } else {
+        // For create mode, we'll add optimistic update after successful creation
         const result = await createTransaction({
           ...values,
           amount,
@@ -112,9 +143,32 @@ export function TransactionForm({
         });
 
         if (result.success) {
-          toast.success("تراکنش با موفقیت ایجاد شد!");
-          form.reset();
-          onClose?.();
+          // Create optimistic transaction for the newly created item
+          const optimisticTransaction: Transaction = {
+            id: result.data?.id || `temp-${Date.now()}`, // Use temp ID until real one is available
+            amount,
+            description: values.description,
+            category: values.category,
+            type: values.type,
+            date,
+            accountId: values.accountId,
+            userId: "", // Will be set by server
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          // Add optimistic update
+          startTransition(() => {
+            onOptimisticAdd?.({
+              type: "add",
+              transaction: optimisticTransaction,
+            });
+
+            toast.success("تراکنش با موفقیت ایجاد شد!");
+            form.reset();
+            onSuccess?.();
+            onClose?.();
+          });
         } else {
           toast.error(result.error || "ایجاد تراکنش ناموفق بود");
         }
@@ -241,7 +295,7 @@ export function TransactionForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {accounts.map((account) => (
+                  {accounts.map((account: Account) => (
                     <SelectItem key={account.id} value={account.id}>
                       {account.name} ({account.type})
                     </SelectItem>
