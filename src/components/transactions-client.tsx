@@ -180,7 +180,7 @@ export function TransactionsClient({
       </div>
 
       {sortedTransactions.length === 0 ? (
-        <Card className="rounded-2xl border-0 bg-white/80 shadow-xl backdrop-blur-sm dark:bg-gray-800/80">
+        <Card className="">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="text-center">
               <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/20 dark:to-amber-900/20">
@@ -220,10 +220,7 @@ export function TransactionsClient({
       ) : (
         <div className="space-y-4">
           {sortedTransactions.map((transaction) => (
-            <Card
-              key={transaction.id}
-              className="rounded-2xl border-0 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-xl dark:bg-gray-800/80"
-            >
+            <Card key={transaction.id} className="">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
@@ -318,18 +315,16 @@ export function TransactionsClient({
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
                         onClick={() => setEditTransaction(transaction)}
-                        className="rounded-xl border-orange-200 text-orange-700 hover:border-orange-300 hover:bg-orange-50"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="outline"
-                        size="sm"
+                        variant="destructive"
+                        size="icon"
                         onClick={() => handleDeleteTransaction(transaction)}
                         disabled={isPending}
-                        className="rounded-xl border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
