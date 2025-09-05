@@ -40,6 +40,11 @@ export type TransactionCategory = (typeof TRANSACTION_CATEGORIES)[number];
 
 export type Transaction = typeof transactions.$inferSelect;
 
+export type TransactionWithPendingState = Transaction & {
+  isPending?: boolean;
+  pendingAction?: "create" | "update" | "delete";
+};
+
 export const createTransactionSchema = z.object({
   amount: z.number().min(0.01, "Amount must be greater than 0"),
   description: z.string().min(1, "Description is required"),

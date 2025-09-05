@@ -9,7 +9,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { toast } from "sonner";
+import { DeleteTransactionDialog } from "@/components/delete-transaction-dialog";
 import { TransactionForm } from "@/components/transaction-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,9 +20,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { deleteTransaction } from "@/lib/actions/transactions";
 import type { Account } from "@/lib/types/accounts";
-import type { Transaction } from "@/lib/types/transactions";
+import {
+  TRANSACTION_CATEGORY_LABELS,
+  type Transaction,
+  type TransactionWithPendingState,
+} from "@/lib/types/transactions";
 
 interface TransactionsClientProps {
   transactionsPromise: Promise<{
@@ -37,6 +40,11 @@ interface TransactionsClientProps {
   }>;
 }
 
+type OptimisticAction =
+  | { type: "add"; transaction: TransactionWithPendingState }
+  | { type: "update"; transaction: TransactionWithPendingState }
+  | { type: "delete"; transactionId: string };
+
 export function TransactionsClient({
   transactionsPromise,
   accountsPromise,
@@ -45,12 +53,19 @@ export function TransactionsClient({
   const transactionsResult = use(transactionsPromise);
   const accountsResult = use(accountsPromise);
 
-  const [optimisticTransactions, addOptimisticTransaction] = useOptimistic(
-    transactionsResult.success ? transactionsResult.data || [] : [],
-    (
-      state,
-      action: { type: "add" | "update" | "delete"; transaction: Transaction },
-    ) => {
+  // Transform Transaction[] to TransactionWithPendingState[]
+  const initialTransactions: TransactionWithPendingState[] = useMemo(() => {
+    if (!transactionsResult.success || !transactionsResult.data) return [];
+    return transactionsResult.data.map((transaction) => ({
+      ...transaction,
+      isPending: false,
+      pendingAction: undefined,
+    }));
+  }, [transactionsResult]);
+
+  const [optimisticTransactions, updateOptimisticTransactions] = useOptimistic(
+    initialTransactions,
+    (state: TransactionWithPendingState[], action: OptimisticAction) => {
       switch (action.type) {
         case "add":
           return [...state, action.transaction];
@@ -62,7 +77,7 @@ export function TransactionsClient({
           );
         case "delete":
           return state.filter(
-            (transaction) => transaction.id !== action.transaction.id,
+            (transaction) => transaction.id !== action.transactionId,
           );
         default:
           return state;
@@ -72,11 +87,11 @@ export function TransactionsClient({
 
   const accounts = accountsResult.success ? accountsResult.data || [] : [];
 
-  // State for dialogs
-  const [editTransaction, setEditTransaction] = useState<Transaction | null>(
-    null,
-  );
-  const [showAddDialog, setShowAddDialog] = useState(false);
+  // Consolidated dialog state
+  const [dialogState, setDialogState] = useState<{
+    type: "add" | "edit" | "delete" | null;
+    transaction?: TransactionWithPendingState;
+  }>({ type: null });
 
   // Create memoized account lookup map for better performance
   const accountMap = useMemo(() => {
@@ -90,6 +105,57 @@ export function TransactionsClient({
     );
   }, [optimisticTransactions]);
 
+  // Optimistic action handlers
+  const handleOptimisticAdd = useCallback(
+    (transaction: TransactionWithPendingState) => {
+      startTransition(() => {
+        updateOptimisticTransactions({ type: "add", transaction });
+      });
+    },
+    [updateOptimisticTransactions],
+  );
+
+  const handleOptimisticUpdate = useCallback(
+    (transaction: TransactionWithPendingState) => {
+      startTransition(() => {
+        updateOptimisticTransactions({ type: "update", transaction });
+      });
+    },
+    [updateOptimisticTransactions],
+  );
+
+  const handleOptimisticDelete = useCallback(
+    (transactionId: string) => {
+      startTransition(() => {
+        updateOptimisticTransactions({ type: "delete", transactionId });
+      });
+    },
+    [updateOptimisticTransactions],
+  );
+
+  // Dialog handlers
+  const openAddDialog = useCallback(() => {
+    setDialogState({ type: "add" });
+  }, []);
+
+  const openEditDialog = useCallback(
+    (transaction: TransactionWithPendingState) => {
+      setDialogState({ type: "edit", transaction });
+    },
+    [],
+  );
+
+  const openDeleteDialog = useCallback(
+    (transaction: TransactionWithPendingState) => {
+      setDialogState({ type: "delete", transaction });
+    },
+    [],
+  );
+
+  const closeDialog = useCallback(() => {
+    setDialogState({ type: null });
+  }, []);
+
   // Memoized account name getter
   const getAccountName = useCallback(
     (accountId: string) => {
@@ -99,27 +165,13 @@ export function TransactionsClient({
     [accountMap],
   );
 
-  // Optimistic delete handler
-  const handleDeleteTransaction = useCallback(
-    async (transaction: Transaction) => {
-      // Add optimistic update
-      addOptimisticTransaction({ type: "delete", transaction });
-
-      startTransition(async () => {
-        try {
-          const result = await deleteTransaction(transaction.id);
-          if (!result.success) {
-            toast.error(result.error || "حذف تراکنش ناموفق بود");
-          } else {
-            toast.success("تراکنش با موفقیت حذف شد!");
-          }
-        } catch {
-          toast.error("خطای غیرمنتظره رخ داد");
-        }
-      });
-    },
-    [addOptimisticTransaction],
-  );
+  // Memoized category label getter
+  const getCategoryLabel = useCallback((category: string) => {
+    const categoryInfo = TRANSACTION_CATEGORY_LABELS.find(
+      (c) => c.value === category,
+    );
+    return categoryInfo ? categoryInfo.label : category;
+  }, []);
 
   if (!transactionsResult.success) {
     return (
@@ -156,7 +208,10 @@ export function TransactionsClient({
   return (
     <>
       <div className="mb-8 flex justify-end">
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <Dialog
+          open={dialogState.type === "add"}
+          onOpenChange={(open) => (open ? openAddDialog() : closeDialog())}
+        >
           <DialogTrigger asChild>
             <Button className="rounded-xl bg-gradient-primary-button px-6 py-3 font-medium text-white shadow-lg transition-all duration-200 hover:shadow-xl">
               <Plus className="mr-2 h-5 w-5" />
@@ -172,8 +227,8 @@ export function TransactionsClient({
             <TransactionForm
               mode="create"
               accounts={accounts}
-              onSuccess={() => setShowAddDialog(false)}
-              onOptimisticAdd={addOptimisticTransaction}
+              onClose={closeDialog}
+              onOptimisticAdd={handleOptimisticAdd}
             />
           </DialogContent>
         </Dialog>
@@ -208,7 +263,7 @@ export function TransactionsClient({
                 با افزودن اولین تراکنش خود شروع کنید
               </p>
               <Button
-                onClick={() => setShowAddDialog(true)}
+                onClick={openAddDialog}
                 className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-3 font-medium text-white hover:from-orange-600 hover:to-amber-600"
               >
                 <Plus className="mr-2 h-5 w-5" />
@@ -220,7 +275,16 @@ export function TransactionsClient({
       ) : (
         <div className="space-y-4">
           {sortedTransactions.map((transaction) => (
-            <Card key={transaction.id} className="">
+            <Card
+              key={transaction.id}
+              className={`transition-all duration-300 ${
+                transaction.isPending
+                  ? transaction.pendingAction === "delete"
+                    ? "scale-95 animate-pulse border-red-200 bg-red-50 opacity-50 dark:border-red-800 dark:bg-red-900/10"
+                    : "animate-pulse border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/10"
+                  : "hover:shadow-lg"
+              }`}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
@@ -275,7 +339,7 @@ export function TransactionsClient({
                             d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
                           />
                         </svg>
-                        {transaction.category}
+                        {getCategoryLabel(transaction.category)}
                       </span>
                       <span className="flex items-center gap-1">
                         <svg
@@ -316,15 +380,15 @@ export function TransactionsClient({
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => setEditTransaction(transaction)}
+                        onClick={() => openEditDialog(transaction)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => handleDeleteTransaction(transaction)}
-                        disabled={isPending}
+                        onClick={() => openDeleteDialog(transaction)}
+                        disabled={isPending || transaction.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -339,8 +403,8 @@ export function TransactionsClient({
 
       {/* Edit Transaction Dialog */}
       <Dialog
-        open={!!editTransaction}
-        onOpenChange={() => setEditTransaction(null)}
+        open={dialogState.type === "edit"}
+        onOpenChange={(open) => open || closeDialog()}
       >
         <DialogContent className="rounded-2xl border-0 shadow-2xl">
           <DialogHeader>
@@ -348,17 +412,29 @@ export function TransactionsClient({
               ویرایش تراکنش
             </DialogTitle>
           </DialogHeader>
-          {editTransaction && (
+          {dialogState.transaction && (
             <TransactionForm
               mode="edit"
-              initialData={editTransaction}
+              initialData={dialogState.transaction}
               accounts={accounts}
-              onSuccess={() => setEditTransaction(null)}
-              onOptimisticUpdate={addOptimisticTransaction}
+              onClose={closeDialog}
+              onOptimisticUpdate={handleOptimisticUpdate}
             />
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Transaction Dialog */}
+      {dialogState.type === "delete" && dialogState.transaction && (
+        <DeleteTransactionDialog
+          isOpen={true}
+          onClose={closeDialog}
+          onSuccess={() => {}}
+          onOptimisticDelete={handleOptimisticDelete}
+          onOptimisticUpdate={handleOptimisticUpdate}
+          transaction={dialogState.transaction}
+        />
+      )}
     </>
   );
 }

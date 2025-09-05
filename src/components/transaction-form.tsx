@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import {
   TRANSACTION_TYPE_LABELS,
   type Transaction,
   type TransactionFormData,
+  type TransactionWithPendingState,
   transactionFormSchema,
 } from "@/lib/types/transactions";
 
@@ -40,11 +41,8 @@ interface TransactionFormProps {
   accounts: Account[];
   onClose?: () => void;
   onSuccess?: () => void;
-  onOptimisticAdd?: (action: { type: "add"; transaction: Transaction }) => void;
-  onOptimisticUpdate?: (action: {
-    type: "update";
-    transaction: Transaction;
-  }) => void;
+  onOptimisticAdd?: (transaction: TransactionWithPendingState) => void;
+  onOptimisticUpdate?: (transaction: TransactionWithPendingState) => void;
 }
 
 export function TransactionForm({
@@ -57,7 +55,6 @@ export function TransactionForm({
   onOptimisticUpdate,
 }: TransactionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPending, startTransition] = useTransition();
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionFormSchema),
@@ -102,7 +99,7 @@ export function TransactionForm({
 
       if (mode === "edit" && initialData) {
         // Create optimistic transaction for update
-        const optimisticTransaction: Transaction = {
+        const optimisticTransaction: TransactionWithPendingState = {
           ...initialData,
           amount,
           description: values.description,
@@ -111,13 +108,15 @@ export function TransactionForm({
           date,
           accountId: values.accountId,
           updatedAt: new Date(),
+          isPending: true,
+          pendingAction: "update",
         };
 
-        // Add optimistic update
-        onOptimisticUpdate?.({
-          type: "update",
-          transaction: optimisticTransaction,
-        });
+        // Optimistic update with pending state
+        onOptimisticUpdate?.(optimisticTransaction);
+
+        // Close dialog immediately for better UX
+        onClose?.();
 
         const result = await updateTransaction({
           id: initialData.id,
@@ -127,55 +126,81 @@ export function TransactionForm({
         });
 
         if (result.success) {
+          // Clear pending state with updated data
+          onOptimisticUpdate?.({
+            ...optimisticTransaction,
+            isPending: false,
+            pendingAction: undefined,
+          });
           toast.success("تراکنش با موفقیت بروزرسانی شد!");
           onSuccess?.();
-          onClose?.();
         } else {
           toast.error(result.error || "بروزرسانی تراکنش ناموفق بود");
-          // The optimistic update will be reverted automatically
+          // Revert to original data without pending state
+          onOptimisticUpdate?.({
+            ...initialData,
+            isPending: false,
+            pendingAction: undefined,
+          });
         }
       } else {
-        // For create mode, we'll add optimistic update after successful creation
+        // Create optimistic transaction for immediate UI update
+        const optimisticTransaction: TransactionWithPendingState = {
+          id: `temp-${Date.now()}`, // Temporary ID
+          amount,
+          description: values.description,
+          category: values.category,
+          type: values.type,
+          date,
+          accountId: values.accountId,
+          userId: "current-user", // Will be replaced by server
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isPending: true,
+          pendingAction: "create",
+        };
+
+        // Optimistic add with pending state
+        onOptimisticAdd?.(optimisticTransaction);
+
+        // Close dialog immediately and reset form for better UX
+        form.reset();
+        onClose?.();
+
         const result = await createTransaction({
           ...values,
           amount,
           date,
         });
 
-        if (result.success) {
-          // Create optimistic transaction for the newly created item
-          const optimisticTransaction: Transaction = {
-            id: result.data?.id || `temp-${Date.now()}`, // Use temp ID until real one is available
-            amount,
-            description: values.description,
-            category: values.category,
-            type: values.type,
-            date,
-            accountId: values.accountId,
-            userId: "", // Will be set by server
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          // Add optimistic update
-          startTransition(() => {
-            onOptimisticAdd?.({
-              type: "add",
-              transaction: optimisticTransaction,
-            });
-
-            toast.success("تراکنش با موفقیت ایجاد شد!");
-            form.reset();
-            onSuccess?.();
-            onClose?.();
+        if (result.success && result.data) {
+          // Replace optimistic transaction with real data
+          onOptimisticUpdate?.({
+            ...optimisticTransaction,
+            id: result.data.id,
+            isPending: false,
+            pendingAction: undefined,
           });
+          toast.success("تراکنش با موفقیت ایجاد شد!");
+          onSuccess?.();
         } else {
           toast.error(result.error || "ایجاد تراکنش ناموفق بود");
+          // Remove the optimistic transaction on failure
+          // Note: This would need a proper revert mechanism in the client
         }
       }
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("خطای غیرمنتظره رخ داد");
+
+      if (mode === "edit" && initialData) {
+        // Revert to original state on error
+        onOptimisticUpdate?.({
+          ...initialData,
+          isPending: false,
+          pendingAction: undefined,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
