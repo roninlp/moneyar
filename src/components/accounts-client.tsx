@@ -1,6 +1,7 @@
 "use client";
 
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Building2, CreditCard, Edit, Plus, Trash2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   startTransition,
   use,
@@ -21,6 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Account, AccountWithPendingState } from "@/lib/types/accounts";
+import { ACCOUNT_TYPE_LABELS } from "@/lib/types/accounts";
 import { Badge } from "./ui/badge";
 
 interface AccountsClientProps {
@@ -164,7 +166,7 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-primary">
+    <div>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -178,7 +180,7 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
             onOpenChange={(open) => (open ? openAddDialog() : closeDialog())}
           >
             <DialogTrigger asChild>
-              <Button className="rounded-xl bg-gradient-primary-button px-6 py-3 font-medium text-white shadow-lg transition-all duration-200 hover:shadow-xl">
+              <Button>
                 <Plus className="mr-2 h-5 w-5" />
                 افزودن حساب
               </Button>
@@ -199,155 +201,215 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
         </div>
 
         {!hasAccounts ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="text-center">
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/20 dark:to-blue-900/20">
-                  <svg
-                    className="h-8 w-8 text-primary-focus"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    role="img"
-                    aria-label="افزودن حساب"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="text-center">
+                  <motion.div
+                    className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/20 dark:to-blue-900/20"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.3, delay: 0.4, type: "spring" }}
                   >
-                    <title>افزودن حساب</title>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
-                  </svg>
-                </div>
-                <h3 className="mb-2 font-semibold text-gray-900 text-xl dark:text-gray-100">
-                  هنوز حسابی ندارید
-                </h3>
-                <p className="mb-6 text-gray-600 dark:text-gray-400">
-                  با افزودن اولین حساب خود شروع کنید
-                </p>
-                <Button
-                  onClick={openAddDialog}
-                  className="rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 px-8 py-3 font-medium text-white hover:from-purple-600 hover:to-blue-600"
-                >
-                  <Plus className="mr-2 h-5 w-5" />
-                  افزودن حساب
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {optimisticAccounts.map((account) => (
-              <Card
-                key={account.id}
-                className={`transition-all duration-300 ${
-                  account.isPending
-                    ? account.pendingAction === "delete"
-                      ? "scale-95 animate-pulse border-red-200 bg-red-50 opacity-50 dark:border-red-800 dark:bg-red-900/10"
-                      : "animate-pulse border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/10"
-                    : "hover:shadow-lg"
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span
-                      className={`font-bold ${account.isPending ? "opacity-70" : ""}`}
+                    <svg
+                      className="h-8 w-8 text-primary-focus"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      role="img"
+                      aria-label="افزودن حساب"
                     >
-                      {account.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className={`py-1 ${account.isPending ? "opacity-70" : ""}`}
+                      <title>افزودن حساب</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                  </motion.div>
+                  <motion.h3
+                    className="mb-2 font-semibold text-gray-900 text-xl dark:text-gray-100"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.5 }}
+                  >
+                    هنوز حسابی ندارید
+                  </motion.h3>
+                  <motion.p
+                    className="mb-6 text-gray-600 dark:text-gray-400"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.6 }}
+                  >
+                    با افزودن اولین حساب خود شروع کنید
+                  </motion.p>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.7 }}
+                  >
+                    <Button
+                      onClick={openAddDialog}
+                      className="rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 px-8 py-3 font-medium text-white hover:from-purple-600 hover:to-blue-600"
+                    >
+                      <Plus className="mr-2 h-5 w-5" />
+                      افزودن حساب
+                    </Button>
+                  </motion.div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+              layout
+            >
+              {optimisticAccounts.map((account) => (
+                <motion.div
+                  key={account.id}
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{
+                    opacity:
+                      account.isPending && account.pendingAction === "delete"
+                        ? 0.5
+                        : 1,
+                    y: 0,
+                    scale:
+                      account.isPending && account.pendingAction === "delete"
+                        ? 0.95
+                        : 1,
+                  }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{
+                    duration: 0.2,
+                    ease: "easeInOut",
+                    layout: { duration: 0.3 },
+                  }}
+                  className={`group ${
+                    account.isPending && account.pendingAction === "delete"
+                      ? "pointer-events-none"
+                      : ""
+                  }`}
+                >
+                  <Card
+                    className={`overflow-hidden border-0 bg-white/70 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white/90 hover:shadow-lg dark:bg-gray-800/70 dark:hover:bg-gray-800/90 ${
+                      account.isPending && account.pendingAction !== "delete"
+                        ? "ring-2 ring-blue-200 dark:ring-blue-700"
+                        : ""
+                    }`}
+                  >
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30">
+                            <CreditCard className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div>
+                            <span
+                              className={`font-bold text-lg ${account.isPending ? "opacity-70" : ""}`}
+                            >
+                              {account.name}
+                            </span>
+                            <div className="mt-1 flex items-center gap-2">
+                              <Badge
+                                variant="outline"
+                                className={`py-0.5 text-xs ${account.isPending ? "opacity-70" : ""}`}
+                              >
+                                {ACCOUNT_TYPE_LABELS.find(
+                                  (t) => t.value === account.type,
+                                )?.label || account.type}
+                              </Badge>
+                              {account.isPending && (
+                                <div className="flex items-center gap-1">
+                                  <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500"></div>
+                                  <span className="text-blue-600 text-xs dark:text-blue-400">
+                                    {account.pendingAction === "create" &&
+                                      "ایجاد..."}
+                                    {account.pendingAction === "update" &&
+                                      "بروزرسانی..."}
+                                    {account.pendingAction === "delete" &&
+                                      "حذف..."}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div
+                        className={`space-y-4 ${account.isPending ? "opacity-70" : ""}`}
                       >
-                        {account.type}
-                      </Badge>
-                      {account.isPending && (
-                        <div className="flex items-center gap-1">
-                          <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
-                          <span className="text-blue-600 text-xs dark:text-blue-400">
-                            {account.pendingAction === "create" &&
-                              "در حال ایجاد..."}
-                            {account.pendingAction === "update" &&
-                              "در حال بروزرسانی..."}
-                            {account.pendingAction === "delete" &&
-                              "در حال حذف..."}
+                        <div className="rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 p-4 dark:from-gray-700 dark:to-gray-600">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-600 text-sm dark:text-gray-300">
+                              موجودی فعلی
+                            </span>
+                            <span className="font-bold text-2xl text-primary">
+                              $
+                              {account.balance.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                          </div>
+                        </div>
+
+                        {account.bank && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Building2 className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                              {account.bank}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 text-gray-500 text-sm dark:text-gray-400">
+                          <span>ایجاد شده در:</span>
+                          <span>
+                            {new Date(account.createdAt).toLocaleDateString(
+                              "fa-IR",
+                            )}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div
-                    className={`space-y-4 ${account.isPending ? "opacity-70" : ""}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
-                        موجودی
-                      </span>
-                      <span className="font-bold text-primary text-xl">
-                        $
-                        {account.balance.toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                    {account.bank && (
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground/70 text-sm">
-                          بانک
-                        </span>
-                        <span className="font-medium text-gray-900">
-                          {account.bank}
-                        </span>
+
+                        <div className="flex justify-between gap-2 pt-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(account)}
+                            disabled={account.isPending}
+                            className="flex-1 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                          >
+                            <Edit className="mr-1 h-4 w-4" />
+                            ویرایش
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openDeleteDialog(account)}
+                            disabled={account.isPending}
+                            className="h-8 w-8 p-0 text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-foreground/70 text-sm">
-                        تاریخ ایجاد
-                      </span>
-                      <span className="text-gray-900 text-sm dark:text-gray-100">
-                        {new Date(account.createdAt).toLocaleDateString(
-                          "fa-IR",
-                        )}
-                      </span>
-                    </div>
-                    <div className="mt-6 flex justify-between gap-3">
-                      <Button
-                        variant="secondary"
-                        onClick={() => openEditDialog(account)}
-                        disabled={account.isPending}
-                        className={
-                          account.isPending
-                            ? "cursor-not-allowed opacity-50"
-                            : ""
-                        }
-                      >
-                        <Edit className="h-4 w-4" />
-                        ویرایش
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => openDeleteDialog(account)}
-                        disabled={account.isPending}
-                        className={
-                          account.isPending
-                            ? "cursor-not-allowed opacity-50"
-                            : ""
-                        }
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
         )}
 
         {/* Edit Account Dialog */}
