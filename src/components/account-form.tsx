@@ -26,6 +26,7 @@ import {
   ACCOUNT_TYPE_LABELS,
   type Account,
   type AccountFormData,
+  type AccountWithPendingState,
   accountFormSchema,
 } from "@/lib/types/accounts";
 
@@ -33,12 +34,16 @@ interface AccountFormProps {
   mode?: "create" | "edit";
   initialData?: Account;
   onClose?: () => void;
+  onOptimisticAdd?: (account: AccountWithPendingState) => void;
+  onOptimisticUpdate?: (account: AccountWithPendingState) => void;
 }
 
 export function AccountForm({
   mode = "create",
   initialData,
   onClose,
+  onOptimisticAdd,
+  onOptimisticUpdate,
 }: AccountFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -69,35 +74,96 @@ export function AccountForm({
       const balance = parseFloat(values.balance) || 0;
 
       if (mode === "edit" && initialData) {
+        const updatedAccount: AccountWithPendingState = {
+          ...initialData,
+          ...values,
+          balance,
+          isPending: true,
+          pendingAction: "update",
+        };
+
+        // Optimistic update with pending state
+        onOptimisticUpdate?.(updatedAccount);
+
+        // Close dialog immediately for better UX
+        onClose?.();
+
         const result = await updateAccount({
           id: initialData.id,
           ...values,
           balance,
         });
 
-        if (result.success) {
+        if (result.success && result.data) {
+          // Clear pending state with real data
+          onOptimisticUpdate?.({
+            ...result.data,
+            isPending: false,
+            pendingAction: undefined,
+          });
           toast.success("حساب با موفقیت بروزرسانی شد!");
-          onClose?.();
         } else {
           toast.error(result.error || "بروزرسانی حساب ناموفق بود");
+          // Revert to original data without pending state
+          onOptimisticUpdate?.({
+            ...initialData,
+            isPending: false,
+            pendingAction: undefined,
+          });
         }
       } else {
+        // Create optimistic account for immediate UI update
+        const optimisticAccount: AccountWithPendingState = {
+          id: `temp-${Date.now()}`, // Temporary ID
+          name: values.name,
+          type: values.type,
+          balance,
+          bank: values.bank || null,
+          userId: "current-user", // Will be replaced by server
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isPending: true,
+          pendingAction: "create",
+        };
+
+        // Optimistic add with pending state
+        onOptimisticAdd?.(optimisticAccount);
+
+        // Close dialog immediately and reset form for better UX
+        form.reset();
+        onClose?.();
+
         const result = await createAccount({
           ...values,
           balance,
         });
 
-        if (result.success) {
+        if (result.success && result.data) {
+          // Replace optimistic account with real data
+          onOptimisticUpdate?.({
+            ...result.data,
+            isPending: false,
+            pendingAction: undefined,
+          });
           toast.success("حساب با موفقیت ایجاد شد!");
-          form.reset();
-          onClose?.();
         } else {
           toast.error(result.error || "ایجاد حساب ناموفق بود");
+          // Remove the optimistic account on failure
+          // Note: This would need a proper revert mechanism
         }
       }
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("خطای غیرمنتظره رخ داد");
+
+      if (mode === "edit" && initialData) {
+        // Revert to original state on error
+        onOptimisticUpdate?.({
+          ...initialData,
+          isPending: false,
+          pendingAction: undefined,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

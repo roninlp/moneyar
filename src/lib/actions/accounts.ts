@@ -42,7 +42,7 @@ export async function createAccount(data: CreateAccountInput) {
       .returning();
 
     revalidatePath("/accounts");
-    return { success: true, data: { id: account.id } };
+    return { success: true, data: account };
   } catch (error) {
     console.error("Error creating account:", error);
     if (error instanceof z.ZodError) {
@@ -91,6 +91,21 @@ export async function updateAccount(data: UpdateAccountInput) {
 
     const validatedData = updateAccountSchema.parse(data);
 
+    // First verify the account belongs to the user
+    const [existingAccount] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, validatedData.id))
+      .limit(1);
+
+    if (!existingAccount) {
+      return { success: false, error: "Account not found" };
+    }
+
+    if (existingAccount.userId !== session.user.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const [updatedAccount] = await db
       .update(accounts)
       .set({
@@ -128,6 +143,21 @@ export async function deleteAccount(accountId: string) {
     });
 
     if (!session?.user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // First verify the account belongs to the user
+    const [existingAccount] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, accountId))
+      .limit(1);
+
+    if (!existingAccount) {
+      return { success: false, error: "Account not found" };
+    }
+
+    if (existingAccount.userId !== session.user.id) {
       return { success: false, error: "Unauthorized" };
     }
 

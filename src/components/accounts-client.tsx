@@ -1,7 +1,14 @@
 "use client";
 
 import { Edit, Plus, Trash2 } from "lucide-react";
-import { use, useOptimistic, useState } from "react";
+import {
+  startTransition,
+  use,
+  useCallback,
+  useMemo,
+  useOptimistic,
+  useState,
+} from "react";
 import { AccountForm } from "@/components/account-form";
 import { DeleteAccountDialog } from "@/components/delete-account-dialog";
 import { Button } from "@/components/ui/button";
@@ -13,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { Account } from "@/lib/types/accounts";
+import type { Account, AccountWithPendingState } from "@/lib/types/accounts";
 import { Badge } from "./ui/badge";
 
 interface AccountsClientProps {
@@ -24,14 +31,27 @@ interface AccountsClientProps {
   }>;
 }
 
+type OptimisticAction =
+  | { type: "add"; account: AccountWithPendingState }
+  | { type: "update"; account: AccountWithPendingState }
+  | { type: "delete"; accountId: string };
+
 export function AccountsClient({ accountsPromise }: AccountsClientProps) {
   const result = use(accountsPromise);
-  const [optimisticAccounts] = useOptimistic(
-    result.success ? result.data || [] : [],
-    (
-      state,
-      action: { type: "add" | "update" | "delete"; account: Account },
-    ) => {
+
+  // Transform Account[] to AccountWithPendingState[]
+  const initialAccounts: AccountWithPendingState[] = useMemo(() => {
+    if (!result.success || !result.data) return [];
+    return result.data.map((account) => ({
+      ...account,
+      isPending: false,
+      pendingAction: undefined,
+    }));
+  }, [result]);
+
+  const [optimisticAccounts, updateOptimisticAccounts] = useOptimistic(
+    initialAccounts,
+    (state: AccountWithPendingState[], action: OptimisticAction) => {
       switch (action.type) {
         case "add":
           return [...state, action.account];
@@ -40,28 +60,105 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
             account.id === action.account.id ? action.account : account,
           );
         case "delete":
-          return state.filter((account) => account.id !== action.account.id);
+          return state.filter((account) => account.id !== action.accountId);
         default:
           return state;
       }
     },
   );
 
-  const [editAccount, setEditAccount] = useState<Account | null>(null);
-  const [deleteAccount, setDeleteAccount] = useState<Account | null>(null);
-  const [showAddDialog, setShowAddDialog] = useState(false);
+  // Consolidated dialog state
+  const [dialogState, setDialogState] = useState<{
+    type: "add" | "edit" | "delete" | null;
+    account?: AccountWithPendingState;
+  }>({ type: null });
+
+  // Optimistic action handlers
+  const handleOptimisticAdd = useCallback(
+    (account: AccountWithPendingState) => {
+      startTransition(() => {
+        updateOptimisticAccounts({ type: "add", account });
+      });
+    },
+    [updateOptimisticAccounts],
+  );
+
+  const handleOptimisticUpdate = useCallback(
+    (account: AccountWithPendingState) => {
+      startTransition(() => {
+        updateOptimisticAccounts({ type: "update", account });
+      });
+    },
+    [updateOptimisticAccounts],
+  );
+
+  const handleOptimisticDelete = useCallback(
+    (accountId: string) => {
+      startTransition(() => {
+        updateOptimisticAccounts({ type: "delete", accountId });
+      });
+    },
+    [updateOptimisticAccounts],
+  );
+
+  // Dialog handlers
+  const openAddDialog = useCallback(() => {
+    setDialogState({ type: "add" });
+  }, []);
+
+  const openEditDialog = useCallback((account: AccountWithPendingState) => {
+    setDialogState({ type: "edit", account });
+  }, []);
+
+  const openDeleteDialog = useCallback((account: AccountWithPendingState) => {
+    setDialogState({ type: "delete", account });
+  }, []);
+
+  const closeDialog = useCallback(() => {
+    setDialogState({ type: null });
+  }, []);
+
+  // Memoized computed values
+  const hasAccounts = useMemo(
+    () => optimisticAccounts.length > 0,
+    [optimisticAccounts.length],
+  );
 
   if (!result.success)
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mb-2 text-red-500">⚠️</div>
-          <h2 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
-            خطا
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+            <svg
+              className="h-8 w-8 text-red-500 dark:text-red-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-label="خطا"
+            >
+              <title>خطا</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h2 className="mb-2 font-semibold text-gray-900 text-lg dark:text-gray-100">
+            خطا در بارگذاری حساب‌ها
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            {result.error || "خطای نامشخص"}
+          <p className="mb-4 text-gray-600 dark:text-gray-400">
+            {result.error === "Unauthorized"
+              ? "شما مجاز به مشاهده این صفحه نیستید"
+              : result.error || "خطای نامشخص در بارگذاری داده‌ها"}
           </p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="rounded-xl bg-gradient-primary-button px-6 py-2 font-medium text-white"
+          >
+            تلاش مجدد
+          </Button>
         </div>
       </div>
     );
@@ -76,7 +173,10 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
               حساب‌های مالی خود را مدیریت کنید
             </p>
           </div>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <Dialog
+            open={dialogState.type === "add"}
+            onOpenChange={(open) => (open ? openAddDialog() : closeDialog())}
+          >
             <DialogTrigger asChild>
               <Button className="rounded-xl bg-gradient-primary-button px-6 py-3 font-medium text-white shadow-lg transition-all duration-200 hover:shadow-xl">
                 <Plus className="mr-2 h-5 w-5" />
@@ -91,15 +191,14 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
               </DialogHeader>
               <AccountForm
                 mode="create"
-                onClose={() => {
-                  setShowAddDialog(false);
-                }}
+                onClose={closeDialog}
+                onOptimisticAdd={handleOptimisticAdd}
               />
             </DialogContent>
           </Dialog>
         </div>
 
-        {optimisticAccounts.length === 0 ? (
+        {!hasAccounts ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="text-center">
@@ -128,7 +227,7 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
                   با افزودن اولین حساب خود شروع کنید
                 </p>
                 <Button
-                  onClick={() => setShowAddDialog(true)}
+                  onClick={openAddDialog}
                   className="rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 px-8 py-3 font-medium text-white hover:from-purple-600 hover:to-blue-600"
                 >
                   <Plus className="mr-2 h-5 w-5" />
@@ -140,17 +239,50 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {optimisticAccounts.map((account) => (
-              <Card key={account.id}>
+              <Card
+                key={account.id}
+                className={`transition-all duration-300 ${
+                  account.isPending
+                    ? account.pendingAction === "delete"
+                      ? "scale-95 animate-pulse border-red-200 bg-red-50 opacity-50 dark:border-red-800 dark:bg-red-900/10"
+                      : "animate-pulse border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/10"
+                    : "hover:shadow-lg"
+                }`}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span className="font-bold">{account.name}</span>
-                    <Badge variant="outline" className="py-1">
-                      {account.type}
-                    </Badge>
+                    <span
+                      className={`font-bold ${account.isPending ? "opacity-70" : ""}`}
+                    >
+                      {account.name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={`py-1 ${account.isPending ? "opacity-70" : ""}`}
+                      >
+                        {account.type}
+                      </Badge>
+                      {account.isPending && (
+                        <div className="flex items-center gap-1">
+                          <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+                          <span className="text-blue-600 text-xs dark:text-blue-400">
+                            {account.pendingAction === "create" &&
+                              "در حال ایجاد..."}
+                            {account.pendingAction === "update" &&
+                              "در حال بروزرسانی..."}
+                            {account.pendingAction === "delete" &&
+                              "در حال حذف..."}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div
+                    className={`space-y-4 ${account.isPending ? "opacity-70" : ""}`}
+                  >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
                         موجودی
@@ -186,8 +318,13 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
                     <div className="mt-6 flex justify-between gap-3">
                       <Button
                         variant="secondary"
-                        onClick={() => setEditAccount(account)}
-                        className=""
+                        onClick={() => openEditDialog(account)}
+                        disabled={account.isPending}
+                        className={
+                          account.isPending
+                            ? "cursor-not-allowed opacity-50"
+                            : ""
+                        }
                       >
                         <Edit className="h-4 w-4" />
                         ویرایش
@@ -195,8 +332,13 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => setDeleteAccount(account)}
-                        className=""
+                        onClick={() => openDeleteDialog(account)}
+                        disabled={account.isPending}
+                        className={
+                          account.isPending
+                            ? "cursor-not-allowed opacity-50"
+                            : ""
+                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -209,32 +351,36 @@ export function AccountsClient({ accountsPromise }: AccountsClientProps) {
         )}
 
         {/* Edit Account Dialog */}
-        <Dialog open={!!editAccount} onOpenChange={() => setEditAccount(null)}>
+        <Dialog
+          open={dialogState.type === "edit"}
+          onOpenChange={(open) => open || closeDialog()}
+        >
           <DialogContent className="rounded-2xl border-0 shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-center font-bold text-xl">
                 ویرایش حساب
               </DialogTitle>
             </DialogHeader>
-            {editAccount && (
+            {dialogState.account && (
               <AccountForm
                 mode="edit"
-                initialData={editAccount}
-                onClose={() => {
-                  setEditAccount(null);
-                }}
+                initialData={dialogState.account}
+                onClose={closeDialog}
+                onOptimisticUpdate={handleOptimisticUpdate}
               />
             )}
           </DialogContent>
         </Dialog>
 
         {/* Delete Account Dialog */}
-        {deleteAccount && (
+        {dialogState.type === "delete" && dialogState.account && (
           <DeleteAccountDialog
-            isOpen={!!deleteAccount}
-            onClose={() => setDeleteAccount(null)}
+            isOpen={true}
+            onClose={closeDialog}
             onSuccess={() => {}}
-            account={deleteAccount}
+            onOptimisticDelete={handleOptimisticDelete}
+            onOptimisticUpdate={handleOptimisticUpdate}
+            account={dialogState.account}
           />
         )}
       </div>

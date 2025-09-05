@@ -23,6 +23,11 @@ export type AccountType = (typeof ACCOUNT_TYPES)[number];
 
 export type Account = typeof accounts.$inferSelect;
 
+export type AccountWithPendingState = Account & {
+  isPending?: boolean;
+  pendingAction?: "create" | "update" | "delete";
+};
+
 export const createAccountSchema = z.object({
   name: z.string().min(1, "Account name is required"),
   type: z.enum(ACCOUNT_TYPES),
